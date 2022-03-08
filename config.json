@@ -1,0 +1,9 @@
+{
+  "host": "",
+  "port": 8080,
+  "listen": 5,
+  "recv-data": 10240,
+  "accessibility": "public",
+  "name_host": "My Public host",
+  "logo": "storage/default_logo-min.png"
+}
