@@ -23,7 +23,8 @@
 from base64 import b64encode
 
 def ownhost_info(host_name, logo):
+    logob = b64encode(open(logo,'rb').read())
     return {
             'name': host_name,
-            'logo': b64encode(open(logo,'rb').read())
+            'logo': logob
             }

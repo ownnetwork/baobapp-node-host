@@ -22,7 +22,7 @@
 
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
-import json
+import simplejson as json
 from os import path
 from uuid import uuid4
 
@@ -30,12 +30,11 @@ from node.utils import json_dumps
 from node.action.host_info import ownhost_info
 
 ### VERSION
-VERSION = 0.1
+VERSION = 0.2
 
 class thread_listen(Thread):
     def __init__(self, c, ip: int, port: int):
         Thread.__init__(self)
-        print(type(c))
         self.c = c
         self.ip = ip
         self.port = port
@@ -51,11 +50,9 @@ class thread_listen(Thread):
             del USER_BY_ID[self.c]
             self.c.close()
         except Exception as e:
-            print('LOG error :', e)
-            raise
+            return
         except ConnectionResetError as e:
-            print(e)
-            raise
+            return 
             
     def process_data(self, data: dict):
         if 'auth_user_id' in data:
@@ -65,7 +62,7 @@ class thread_listen(Thread):
         elif 'send_data_to' in data:
             self.send_data_to_user_id(data)
         elif 'hostinfo' in data:
-            self.c.send(json_dumps(HOSTINFO).encode('utf-8'))
+            self.c.send(HOSTINFO)
 
     def register_user_id(self, data: dict):
 
@@ -117,7 +114,7 @@ class thread_listen(Thread):
                 'from_id': self.user_id,
                 'get-data': data['data']
                 }
-            USER_BY_ID[data['send_data_to']].send(json_dumps(d_to_sender).encode())
+            self.c.sendto(json_dumps(d_to_sender).encode(), USER_BY_ID[data['send_data_to']])
         elif self.statut == False:
             return
     
@@ -136,22 +133,26 @@ class thread_listen(Thread):
 def setup_host():
 
     print('Reading config.json ...')
-    global config
-    with open('config.json', 'r') as f:
-        config = json.load(f)
+    try:
+        global config
+        with open('config.json', 'r') as f:
+            config = json.load(f)
+    except json.decoder.JSONDecodeError as e:
+        print('Not correct writing in config.json')
+        return
 
     print('Create global variables ...')
     global USER_BY_ID
     USER_BY_ID = {}
     global HOSTINFO
-    HOSTINFO = ownhost_info(config['name_host'], config['logo'])
+    HOSTINFO = json.dumps(ownhost_info(config['name_host'], config['logo'])).encode('utf-8')
 
     with socket(AF_INET, SOCK_STREAM) as s:
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         s.bind((config['host'], config['port']))
         s.listen(config['listen'])
 
-        print('OwnNetworkHost is started on', str(config['port']) + '. (Baobapp Network ', str(VERSION) + ')')
+        print('OwnNetworkHost is started on', str(config['port']) + '. (Baobapp Network', str(VERSION) + ')')
         while True:
             (c, (ip, port)) = s.accept()
             c.setblocking(1)

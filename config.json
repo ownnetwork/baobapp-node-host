@@ -1,7 +1,7 @@
 {
   "host": "",
   "port": 8080,
-  "listen": 5,
+  "listen": 4,
   "recv-data": 10240,
   "accessibility": "public",
   "name_host": "My Public host",
